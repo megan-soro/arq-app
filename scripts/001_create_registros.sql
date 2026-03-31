@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS public.registros (
   horas DECIMAL(4,1) NOT NULL CHECK (horas > 0),
   persona TEXT NOT NULL,
   rubro TEXT NOT NULL,
+  etapa TEXT,
   detalle TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
