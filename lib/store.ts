@@ -25,7 +25,15 @@ export async function loadData(): Promise<AppData> {
     if (error) throw error
     return {
       ...DEFAULT_DATA,
-      records: (records || []) as Record[],
+      records: (records || []).map((r: any) => ({
+        id: r.id,
+        fecha: r.fecha,
+        hours: r.horas,
+        person: r.persona,
+        rubro: r.rubro,
+        stage: r.etapa || '',
+        notes: r.detalle || '',
+      })),
     }
   } catch (err) {
     console.error('[v0] Error loading data:', err)
@@ -47,17 +55,25 @@ export async function addRecord(
       .from('registros')
       .insert({
         fecha: record.fecha,
-        hours: record.hours,
+        horas: record.hours,
         rubro: record.rubro,
-        person: record.person,
-        stage: record.stage,
-        notes: record.notes,
+        persona: record.person,
+        etapa: record.stage,
+        detalle: record.notes,
       })
       .select()
       .single()
 
     if (error) throw error
-    return inserted as Record
+    return {
+      id: inserted.id,
+      fecha: inserted.fecha,
+      hours: inserted.horas,
+      person: inserted.persona,
+      rubro: inserted.rubro,
+      stage: inserted.etapa || '',
+      notes: inserted.detalle || '',
+    }
   } catch (err) {
     console.error('[v0] Error adding record:', err)
     return null
