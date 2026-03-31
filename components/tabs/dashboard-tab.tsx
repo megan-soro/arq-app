@@ -1,6 +1,7 @@
 'use client'
 
 import { AppData, fmtH, fmtDateShort, byKey, totalHours } from '@/lib/store'
+import { fmtH as fmtHHelper } from '@/lib/helpers'
 
 interface DashboardTabProps {
   data: AppData
@@ -11,7 +12,7 @@ export function DashboardTab({ data }: DashboardTabProps) {
   const uniquePeople = [...new Set(data.records.map((r) => r.person))].length
   const uniqueRubros = [...new Set(data.records.map((r) => r.rubro))].length
 
-  const recent = [...data.records].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6)
+  const recent = [...data.records].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 6)
 
   return (
     <div className="tab-content">
@@ -19,7 +20,7 @@ export function DashboardTab({ data }: DashboardTabProps) {
         <div className="stat-card dark">
           <div className="stat-label">Total horas</div>
           <div className="stat-value">
-            {fmtH(total)}
+            {fmtHHelper(total)}
             <span className="stat-unit">h</span>
           </div>
         </div>
@@ -62,8 +63,8 @@ export function DashboardTab({ data }: DashboardTabProps) {
                 </div>
               </div>
               <div className="record-right">
-                <div className="record-hours">{fmtH(r.hours)}h</div>
-                <div className="record-date-small">{fmtDateShort(r.date)}</div>
+                <div className="record-hours">{fmtHHelper(r.hours)}h</div>
+                <div className="record-date-small">{fmtDateShort(r.fecha)}</div>
               </div>
             </div>
           ))

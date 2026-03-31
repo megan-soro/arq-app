@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Header } from '@/components/header'
 import { NavTabs } from '@/components/nav-tabs'
 import { BottomNav } from '@/components/bottom-nav'
@@ -11,31 +11,40 @@ import { RegistrosTab } from '@/components/tabs/registros-tab'
 import { AnalisisTab } from '@/components/tabs/analisis-tab'
 import { ResumenTab } from '@/components/tabs/resumen-tab'
 import {
-  loadData,
+  useData,
   addRecord,
   deleteRecord as deleteRecordStore,
   addRubro,
   addPerson,
   totalHours,
 } from '@/lib/store'
-import { AppData } from '@/lib/types'
+import { AppData, Record } from '@/lib/types'
 
 type TabId = 'dashboard' | 'registros' | 'analisis' | 'resumen'
 
 export default function Home() {
+  const { data: initialData, loading } = useData()
   const [data, setData] = useState<AppData | null>(null)
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
   const [modalOpen, setModalOpen] = useState(false)
 
-  useEffect(() => {
-    setData(loadData())
-  }, [])
-
-  if (!data) {
-    return null
+  // Update data when initialData loads
+  if (data === null && initialData) {
+    setData(initialData)
   }
 
-  const handleSaveRecord = (record: {
+  if (!data || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-current mb-2"></div>
+          <p className="text-sm">Cargando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const handleSaveRecord = async (record: {
     stage: string
     rubro: string
     person: string
@@ -43,12 +52,26 @@ export default function Home() {
     date: string
     notes: string
   }) => {
-    setData(addRecord(data, record))
-    setModalOpen(false)
+    const newRecord = await addRecord(data, record)
+    if (newRecord) {
+      const updatedData = {
+        ...data,
+        records: [newRecord, ...data.records],
+      }
+      setData(updatedData)
+      setModalOpen(false)
+    }
   }
 
-  const handleDeleteRecord = (id: string) => {
-    setData(deleteRecordStore(data, id))
+  const handleDeleteRecord = async (id: string) => {
+    const success = await deleteRecordStore(id)
+    if (success) {
+      const updatedData = {
+        ...data,
+        records: data.records.filter((r) => r.id !== id),
+      }
+      setData(updatedData)
+    }
   }
 
   const handleAddRubro = (rubro: string) => {

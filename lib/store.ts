@@ -1,8 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { RealtimeChannel } from '@supabase/supabase-js'
+import { createClient } from './supabase/client'
 import { AppData, Record } from './types'
-
-const LS_KEY = 'arq-tracker-v2'
 
 const DEFAULT_DATA: AppData = {
   stages: ['Anteproyecto', 'Proyecto', 'Documentación', 'Dirección de Obra', 'Obra', 'Renderizado', 'Gestión'],
@@ -11,61 +12,128 @@ const DEFAULT_DATA: AppData = {
   records: [],
 }
 
-export function loadData(): AppData {
-  if (typeof window === 'undefined') return DEFAULT_DATA
+let channel: RealtimeChannel | null = null
+
+export async function loadData(): Promise<AppData> {
+  const supabase = createClient()
   try {
-    const stored = localStorage.getItem(LS_KEY)
-    return stored ? JSON.parse(stored) : DEFAULT_DATA
-  } catch {
+    const { data: records, error } = await supabase
+      .from('registros')
+      .select('*')
+      .order('fecha', { ascending: false })
+
+    if (error) throw error
+    return {
+      ...DEFAULT_DATA,
+      records: (records || []) as Record[],
+    }
+  } catch (err) {
+    console.error('[v0] Error loading data:', err)
     return DEFAULT_DATA
   }
 }
 
-export function saveData(data: AppData): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(LS_KEY, JSON.stringify(data))
+export async function saveData(): Promise<void> {
+  // Datos guardados directamente en Supabase
 }
 
-export function addRecord(data: AppData, record: Omit<Record, 'id'>): AppData {
-  const newRecord: Record = {
-    ...record,
-    id: Date.now().toString(),
+export async function addRecord(
+  data: AppData,
+  record: Omit<Record, 'id'>
+): Promise<Record | null> {
+  const supabase = createClient()
+  try {
+    const { data: inserted, error } = await supabase
+      .from('registros')
+      .insert({
+        fecha: record.fecha,
+        hours: record.hours,
+        rubro: record.rubro,
+        person: record.person,
+        stage: record.stage,
+        notes: record.notes,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return inserted as Record
+  } catch (err) {
+    console.error('[v0] Error adding record:', err)
+    return null
   }
-  const newData = {
-    ...data,
-    records: [...data.records, newRecord],
-  }
-  saveData(newData)
-  return newData
 }
 
-export function deleteRecord(data: AppData, id: string): AppData {
-  const newData = {
-    ...data,
-    records: data.records.filter((r) => r.id !== id),
+export async function deleteRecord(id: string): Promise<boolean> {
+  const supabase = createClient()
+  try {
+    const { error } = await supabase.from('registros').delete().eq('id', id)
+    if (error) throw error
+    return true
+  } catch (err) {
+    console.error('[v0] Error deleting record:', err)
+    return false
   }
-  saveData(newData)
-  return newData
 }
 
 export function addRubro(data: AppData, rubro: string): AppData {
   if (data.rubros.includes(rubro)) return data
-  const newData = {
+  return {
     ...data,
     rubros: [...data.rubros, rubro],
   }
-  saveData(newData)
-  return newData
 }
 
 export function addPerson(data: AppData, person: string): AppData {
   if (data.people.includes(person)) return data
-  const newData = {
+  return {
     ...data,
     people: [...data.people, person],
   }
-  saveData(newData)
-  return newData
+}
+
+export function useData() {
+  const [data, setData] = useState<AppData>(DEFAULT_DATA)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const init = async () => {
+      const loaded = await loadData()
+      if (isMounted) setData(loaded)
+
+      // Setup real-time listener
+      const supabase = createClient()
+      if (!channel) {
+        channel = supabase
+          .channel('registros-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'registros',
+            },
+            async () => {
+              const updated = await loadData()
+              if (isMounted) setData(updated)
+            }
+          )
+          .subscribe()
+      }
+
+      if (isMounted) setLoading(false)
+    }
+
+    init()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  return { data, loading }
 }
 
 // Aggregation helpers
@@ -95,6 +163,15 @@ export function byPersonDetail(data: AppData): [string, PersonDetail][] {
     map[r.person].rubros[r.rubro] = (map[r.person].rubros[r.rubro] || 0) + r.hours
   })
   return Object.entries(map).sort((a, b) => b[1].total - a[1].total)
+}
+
+export function groupByDate(records: Record[]): { [date: string]: Record[] } {
+  const grouped: { [date: string]: Record[] } = {}
+  records.forEach((r) => {
+    grouped[r.fecha] = grouped[r.fecha] || []
+    grouped[r.fecha].push(r)
+  })
+  return grouped
 }
 
 // Color palette

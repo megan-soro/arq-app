@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { AppData, byKey, byPersonDetail, fmtH, getColor } from '@/lib/store'
+import { AppData, byKey, byPersonDetail } from '@/lib/store'
+import { fmtH, getColor } from '@/lib/helpers'
 
 interface AnalisisTabProps {
   data: AppData

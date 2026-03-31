@@ -4,7 +4,7 @@ export interface Record {
   rubro: string
   person: string
   hours: number
-  date: string
+  fecha: string
   notes: string
 }
 

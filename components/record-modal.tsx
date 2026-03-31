@@ -7,7 +7,7 @@ interface RecordModalProps {
   open: boolean
   onClose: () => void
   data: AppData
-  onSave: (record: { stage: string; rubro: string; person: string; hours: number; date: string; notes: string }) => void
+  onSave: (record: { stage: string; rubro: string; person: string; hours: number; date: string; notes: string }) => Promise<void>
   onAddRubro: (rubro: string) => void
   onAddPerson: (person: string) => void
 }
@@ -43,9 +43,9 @@ export function RecordModal({ open, onClose, data, onSave, onAddRubro, onAddPers
 
   const isValid = stage && rubro && person && parseFloat(hours) > 0 && date
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isValid) return
-    onSave({
+    await onSave({
       stage,
       rubro,
       person,

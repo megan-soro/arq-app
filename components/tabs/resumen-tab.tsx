@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { AppData, byKey, fmtH, totalHours } from '@/lib/store'
+import { AppData, byKey, totalHours } from '@/lib/store'
+import { fmtH } from '@/lib/helpers'
 
 interface ResumenTabProps {
   data: AppData
