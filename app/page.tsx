@@ -28,8 +28,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
   const [modalOpen, setModalOpen] = useState(false)
 
-  // Update data when initialData loads
-  if (data === null && initialData) {
+  // Sync data when loaded from Supabase
+  if (!loading && data === null) {
     setData(initialData)
   }
 
