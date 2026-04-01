@@ -52,7 +52,10 @@ export default function Home() {
     date: string
     notes: string
   }) => {
-    const newRecord = await addRecord(data, record)
+    const newRecord = await addRecord(data, {
+      ...record,
+      fecha: record.date,
+    })
     if (newRecord) {
       const updatedData = {
         ...data,
